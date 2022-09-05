@@ -309,6 +309,12 @@ pub fn parse_token(stream: ParseStream) -> ParseResult<ConstraintToken> {
                         error: parse_optional_custom_error(&stream)?,
                     },
                 )),
+                "generator" => ConstraintToken::AccountGenerator(Context::new(
+                    span,
+                    ConstraintAccountGenerator {
+                        generator: stream.parse()?
+                    },
+                )),
                 _ => return Err(ParseError::new(ident.span(), "Invalid attribute")),
             }
         }
@@ -357,6 +363,7 @@ pub struct ConstraintGroupBuilder<'ty> {
     pub realloc: Option<Context<ConstraintRealloc>>,
     pub realloc_payer: Option<Context<ConstraintReallocPayer>>,
     pub realloc_zero: Option<Context<ConstraintReallocZero>>,
+    pub account_generator: Option<Context<ConstraintAccountGenerator>>,
 }
 
 impl<'ty> ConstraintGroupBuilder<'ty> {
@@ -391,6 +398,7 @@ impl<'ty> ConstraintGroupBuilder<'ty> {
             realloc: None,
             realloc_payer: None,
             realloc_zero: None,
+            account_generator: None,
         }
     }
 
@@ -592,6 +600,7 @@ impl<'ty> ConstraintGroupBuilder<'ty> {
             realloc,
             realloc_payer,
             realloc_zero,
+            account_generator,
         } = self;
 
         // Converts Option<Context<T>> -> Option<T>.
@@ -709,6 +718,7 @@ impl<'ty> ConstraintGroupBuilder<'ty> {
                         owner: owner.as_ref().map(|o| o.owner_address.clone()),
                     }
                 },
+                account_generator: account_generator.clone().map(|g| g.generator.clone()),
             })).transpose()?,
             realloc: realloc.as_ref().map(|r| ConstraintReallocGroup {
                 payer: into_inner!(realloc_payer).unwrap().target,
@@ -764,6 +774,7 @@ impl<'ty> ConstraintGroupBuilder<'ty> {
             ConstraintToken::Realloc(c) => self.add_realloc(c),
             ConstraintToken::ReallocPayer(c) => self.add_realloc_payer(c),
             ConstraintToken::ReallocZero(c) => self.add_realloc_zero(c),
+            ConstraintToken::AccountGenerator(c) => self.add_account_generator(c),
         }
     }
 
@@ -952,6 +963,15 @@ impl<'ty> ConstraintGroupBuilder<'ty> {
             ));
         }
         self.bump.replace(c);
+        Ok(())
+    }
+
+    fn add_account_generator(&mut self, c: Context<ConstraintAccountGenerator>) -> ParseResult<()> {
+        if self.account_generator.is_some() {
+            return Err(ParseError::new(c.span(), "account generator already provided"));
+        }
+
+        self.account_generator.replace(c);
         Ok(())
     }
 

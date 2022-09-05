@@ -714,6 +714,7 @@ pub enum ConstraintToken {
     Realloc(Context<ConstraintRealloc>),
     ReallocPayer(Context<ConstraintReallocPayer>),
     ReallocZero(Context<ConstraintReallocZero>),
+    AccountGenerator(Context<ConstraintAccountGenerator>),
 }
 
 impl Parse for ConstraintToken {
@@ -807,6 +808,7 @@ pub struct ConstraintInitGroup {
     pub payer: Expr,
     pub space: Option<Expr>,
     pub kind: InitKind,
+    pub account_generator: Option<Expr>,
 }
 
 #[derive(Debug, Clone)]
@@ -833,6 +835,11 @@ pub struct ConstraintState {
 #[derive(Debug, Clone)]
 pub struct ConstraintPayer {
     pub target: Expr,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConstraintAccountGenerator {
+    pub generator: Expr,
 }
 
 #[derive(Debug, Clone)]
